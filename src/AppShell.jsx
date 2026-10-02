@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 const TABS = [
   { to: '/today', label: 'Today' },
   { to: '/ideas', label: 'Ideas' },
-  { to: '/campaign', label: 'Campaign' },
+  { to: '/campaigns', label: 'Campaigns' },
   { to: '/calendar', label: 'Calendar' },
   { to: '/assets', label: 'Assets' },
   { to: '/preview', label: 'Preview' },

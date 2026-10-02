@@ -289,6 +289,16 @@ export default function PostEditor() {
     setPost((p) => ({ ...p, slides: p.slides.map((s, i) => i === idx ? next : s) }))
   }
 
+  // Slide numbers (n/total shown in the editor and baked into the "N / total"
+  // footer counter on the rendered card) are derived from array position, not
+  // stored on the slide itself — removing one here is all that's needed for
+  // every slide after it to renumber correctly on the next render.
+  const deleteSlide = (idx) => {
+    if (post.slides.length <= 1) return // a post needs at least one slide
+    if (!confirm(`Delete slide ${idx + 1}? This cannot be undone.`)) return
+    setPost((p) => ({ ...p, slides: p.slides.filter((_, i) => i !== idx) }))
+  }
+
   const save = async () => {
     setSaving(true); setError(null)
     try {
@@ -441,7 +451,15 @@ export default function PostEditor() {
           return (
             <div className="card-block slide-editor-row" key={idx}>
               <div className="slide-editor-fields">
-                <div className="row-between"><strong>Slide {idx + 1}</strong><span className="tag">{slide.layout}</span></div>
+                <div className="row-between">
+                  <div className="row" style={{ gap: 10 }}>
+                    <strong>Slide {idx + 1}</strong>
+                    <span className="tag">{slide.layout}</span>
+                  </div>
+                  <button className="ghost danger" onClick={() => deleteSlide(idx)} disabled={post.slides.length <= 1}>
+                    Delete slide
+                  </button>
+                </div>
                 <SlideFields slide={slide} onChange={(next) => updateSlide(idx, next)} />
                 <StyleFields slide={slide} onChange={(next) => updateSlide(idx, next)} />
               </div>

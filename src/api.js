@@ -102,7 +102,10 @@ export const api = {
   buildHighlights: () => post('/api/build/highlights', {}),
 
   manifest: () => get('/api/manifest'),
-  campaign: () => get('/api/campaign'),
+  campaigns: () => get('/api/campaigns'),
+  campaign: (id) => get(`/api/campaigns/${encodeURIComponent(id)}`),
+  createCampaign: (name, ideas) => post('/api/campaigns', { name, ideas }),
+  deleteCampaign: (id) => del(`/api/campaigns/${encodeURIComponent(id)}`),
 
   // Returns { url, overflow } — url is an object URL for the rendered PNG
   // (caller should URL.revokeObjectURL() the previous one before requesting
