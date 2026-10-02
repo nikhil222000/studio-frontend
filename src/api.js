@@ -1,3 +1,5 @@
+import { getToken, clearToken } from './auth.js'
+
 // A handful of concurrent heavy requests (Playwright-rendered previews, large
 // static images) can exceed the dev proxy's connection handling and strand a
 // request that the server actually completed — it just never delivers the
@@ -17,8 +19,14 @@ const REQUEST_TIMEOUT_MS = 15000
 // e.g. https://studioapi.example.com — for a split frontend/backend deploy.
 export const API_BASE = import.meta.env.VITE_API_BASE || ''
 
+// Fired on any 401 so the App-level auth gate can drop back to the login
+// screen immediately, instead of every page having to check for it.
+export const AUTH_EVENT = 'fitkarta:unauthorized'
+
 async function req(method, url, body) {
   const opts = { method, headers: {} }
+  const token = getToken()
+  if (token) opts.headers['Authorization'] = `Bearer ${token}`
   if (body instanceof FormData) {
     opts.body = body
   } else if (body !== undefined) {
@@ -39,6 +47,10 @@ async function req(method, url, body) {
   } finally {
     clearTimeout(timer)
   }
+  if (res.status === 401 && !url.startsWith('/api/auth/')) {
+    clearToken()
+    window.dispatchEvent(new Event(AUTH_EVENT))
+  }
   if (res.status === 204) return null
   const isJson = (res.headers.get('content-type') || '').includes('application/json')
   const data = isJson ? await res.json() : await res.text()
@@ -56,6 +68,10 @@ export const PLATFORMS = ['instagram', 'facebook', 'linkedin', 'x']
 export const PLATFORM_LABELS = { instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', x: 'X' }
 
 export const api = {
+  login: (email, otp) => post('/api/auth/login', { email, otp }),
+  logout: () => post('/api/auth/logout', {}),
+  authCheck: () => get('/api/auth/check'),
+
   config: () => get('/api/config'),
 
   ideas: (params = {}) => {
@@ -115,9 +131,13 @@ export const api = {
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     let res
     try {
+      const token = getToken()
       res = await fetch(API_BASE + '/api/render/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ slide, n, total }),
         signal: controller.signal,
       })

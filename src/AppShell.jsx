@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { api } from './api.js'
+import { clearToken } from './auth.js'
 
 const TABS = [
   { to: '/today', label: 'Today' },
@@ -20,6 +22,12 @@ export default function AppShell() {
   // unmount on its own the way a full page reload would.
   useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
+  const logout = () => {
+    api.logout().catch(() => {}) // best-effort server-side revoke
+    clearToken()
+    window.location.reload() // simplest way to re-trigger App's auth check
+  }
+
   return (
     <div className="shell">
       <header className="shell-topbar">
@@ -34,6 +42,7 @@ export default function AppShell() {
           {TABS.map((t) => (
             <NavLink key={t.to} to={t.to} className={({ isActive }) => isActive ? 'on' : ''}>{t.label}</NavLink>
           ))}
+          <a href="#" onClick={(e) => { e.preventDefault(); logout() }}>Log out</a>
         </nav>
       </aside>
       <main className="shell-main">
